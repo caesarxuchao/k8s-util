@@ -20,77 +20,72 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/golang/glog"
-
 	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/util/strategicpatch"
 )
 
-var podA = v1.ReplicationController{
-	//	ObjectMeta: v1.ObjectMeta{
-	//		// 		OwnerReferences: []v1.OwnerReference{
-	//		// 			{UID: "1"},
-	//		// 		},
-	//		Labels: map[string]string{
-	//			"x": "a",
-	//		},
-	//	},
-	Spec: v1.ReplicationControllerSpec{
-		Selector: map[string]string{
-			"x": "a",
-		},
-		Template: &v1.PodTemplateSpec{
-			ObjectMeta: v1.ObjectMeta{
-				Labels: map[string]string{
-					"x": "a",
-				},
-			},
+//var podA = v1.ReplicationController{
+//	ObjectMeta: v1.ObjectMeta{
+//		//		Finalizers: []string{
+//		//			"x/y",
+//		//			"w/z",
+//		//		},
+//		OwnerReferences: []v1.OwnerReference{
+//			{UID: "1", BlockOwnerDeletion: &trueVar},
+//			{UID: "2"},
+//			{UID: "3"},
+//		},
+//	},
+//}
+
+var nodeA = v1.Node{
+	Status: v1.NodeStatus{
+		VolumesInUse: []v1.UniqueVolumeName{
+			"1",
+			"2",
 		},
 	},
 }
 
+var nodeB = v1.Node{
+	Status: v1.NodeStatus{
+		VolumesInUse: []v1.UniqueVolumeName{
+			"1",
+			"3",
+		},
+	},
+}
 var trueVar = true
 
-var podB = v1.ReplicationController{
-	//	ObjectMeta: v1.ObjectMeta{
-	//		// 		OwnerReferences: []v1.OwnerReference{
-	//		// 			{UID: "1"},
-	//		// 		},
-	//		Labels: map[string]string{
-	//			"x": "a",
-	//		},
-	//	},
-	Spec: v1.ReplicationControllerSpec{
-		Selector: map[string]string{
-			"x":         "a",
-			"uniqueKey": "1",
-		},
-		Template: &v1.PodTemplateSpec{
-			ObjectMeta: v1.ObjectMeta{
-				Labels: map[string]string{
-					"x":         "a",
-					"uniqueKey": "1",
-				},
-			},
-		},
-	},
-}
+//var podB = v1.ReplicationController{
+//	ObjectMeta: v1.ObjectMeta{
+//		OwnerReferences: []v1.OwnerReference{
+//			{UID: "1", BlockOwnerDeletion: &trueVar},
+//			{UID: "2"},
+//			{UID: "3"},
+//		},
+//	},
+//}
 
 func main() {
-	original, err := json.Marshal(podA)
+	original, err := json.Marshal(nodeA)
 	if err != nil {
-		glog.Error(err)
+		panic(err)
 		return
 	}
-	modified, _ := json.Marshal(podB)
+	modified, _ := json.Marshal(nodeB)
 	if err != nil {
-		glog.Error(err)
+		panic(err)
 		return
 	}
-	patch, err := strategicpatch.CreateStrategicMergePatch(original, modified, v1.ReplicationController{})
+	patch, err := strategicpatch.CreateStrategicMergePatch(original, modified, v1.Node{})
 	if err != nil {
-		glog.Error(err)
-		return
+		panic(err)
 	}
 	fmt.Println("patch=", string(patch))
+	patched, err := strategicpatch.StrategicMergePatch(original, patch, v1.Node{})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(patched))
 }
